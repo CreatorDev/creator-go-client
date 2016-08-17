@@ -64,7 +64,21 @@ func Create(config *Config) (*Client, error) {
 	return &ds, nil
 }
 
-func (d *Client) Authorize(req *http.Request) error {
+func (d *Client) Close() {
+
+}
+
+func (d *Client) SetBearerToken(token string) {
+	if token != "" {
+		d.authGetJson["Authorization"] = "Bearer " + token
+		d.authPostJson["Authorization"] = "Bearer " + token
+	} else {
+		delete(d.authGetJson, "Authorization")
+		delete(d.authPostJson, "Authorization")
+	}
+}
+
+func (d *Client) AuthorizePSK(req *http.Request) error {
 
 	// the lifetime should be shorter, but think I'm hitting some timezone issues at the moment
 	orgClaim := OrgClaim{
@@ -101,10 +115,12 @@ func (d *Client) Get(url string, headers map[string]string, result interface{}) 
 		req.Header.Set(n, v)
 	}
 
-	err = d.Authorize(req)
-	if err != nil {
-		d.log.Request(req, "Authorize(): %s", err.Error())
-		return err
+	if _, ok := headers["Authorization"]; !ok {
+		err = d.AuthorizePSK(req)
+		if err != nil {
+			d.log.Request(req, "AuthorizePSK(): %s", err.Error())
+			return err
+		}
 	}
 
 	resp, err := d.client.Do(req)
@@ -147,10 +163,64 @@ func (d *Client) Post(url string, headers map[string]string, postbody io.Reader,
 		req.Header.Set(n, v)
 	}
 
-	err = d.Authorize(req)
+	if _, ok := headers["Authorization"]; !ok {
+		err = d.AuthorizePSK(req)
+		if err != nil {
+			d.log.Request(req, "AuthorizePSK(): %s", err.Error())
+			return err
+		}
+	}
+
+	resp, err := d.client.Do(req)
 	if err != nil {
-		d.log.Request(req, "Authorize(): %s", err.Error())
+		d.log.Request(req, "Do(): %s", err.Error())
 		return err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		d.log.Request(req, "ReadAll(): %s", err.Error())
+		return err
+	}
+	resp.Body.Close()
+
+	if resp.StatusCode > 400 {
+		var e Error
+		err = json.Unmarshal(body, &e)
+		if err != nil {
+			d.log.Request(req, "status: %s(%d)", resp.Status, resp.StatusCode)
+		} else {
+			d.log.Request(req, "[%s][%s][%s]", e.ErrorCode, e.ErrorMessage, e.ErrorDetails)
+		}
+		return fmt.Errorf("http status: %d", resp.StatusCode)
+	}
+
+	err = json.Unmarshal(body, result)
+	if err != nil {
+		d.log.Request(req, "Unmarshal(): %s", err.Error())
+		return err
+	}
+
+	d.log.Request(req, "Post(): OK")
+	return nil
+}
+
+func (d *Client) Delete(url string, headers map[string]string) error {
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		d.log.Request(req, "NewRequest(): %s", err.Error())
+		return err
+	}
+
+	for n, v := range headers {
+		req.Header.Set(n, v)
+	}
+
+	if _, ok := headers["Authorization"]; !ok {
+		err = d.AuthorizePSK(req)
+		if err != nil {
+			d.log.Request(req, "AuthorizePSK(): %s", err.Error())
+			return err
+		}
 	}
 
 	resp, err := d.client.Do(req)
@@ -163,26 +233,12 @@ func (d *Client) Post(url string, headers map[string]string, postbody io.Reader,
 		return fmt.Errorf("http status: %d", resp.StatusCode)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		d.log.Request(req, "ReadAll(): %s", err.Error())
-		return err
-	}
-	resp.Body.Close()
-
-	err = json.Unmarshal(body, result)
-	if err != nil {
-		d.log.Request(req, "Unmarshal(): %s", err.Error())
-		return err
-	}
-
-	d.log.Request(req, "Post(): OK")
+	d.log.Request(req, "Delete(): OK")
 	return nil
 }
 
 func (d *Client) CreateAccessKey(name string) (*AccessKey, error) {
 	var entry EntryPoint
-
 	err := d.Get(d.baseUrl, d.authGetJson, &entry)
 	if err != nil {
 		d.log.Error("Get(): %s", err.Error())
@@ -202,4 +258,35 @@ func (d *Client) CreateAccessKey(name string) (*AccessKey, error) {
 		&key)
 
 	return &key, nil
+}
+
+func (d *Client) SubscribeConnectivity(req *ConnectivitySubscriptionRequest, resp *ConnectivitySubscriptionResponse) error {
+	var entry EntryPoint
+	err := d.Get(d.baseUrl, d.authGetJson, &entry)
+	if err != nil {
+		d.log.Error("Get(): %s", err.Error())
+		return err
+	}
+	for _, l := range entry.Links {
+		d.log.Info("entrypoint: Rel %s Href %s Type %s", l.Rel, l.Href, l.Type)
+	}
+
+	endpoint, err := entry.Links.GetLink("subscriptions")
+	if err != nil {
+		d.log.Error("GetLink(): %s", err.Error())
+		return err
+	}
+
+	buf, err := json.Marshal(req)
+	if err != nil {
+		d.log.Error("Marshal(): %s", err.Error())
+		return err
+	}
+
+	err = d.Post(endpoint.Href,
+		d.authPostJson,
+		bytes.NewBuffer(buf),
+		resp)
+
+	return err
 }
