@@ -19,7 +19,7 @@ type SubscriptionRequest struct {
 
 	AcceptContentType string `json:"AcceptContentType,omitempty"`
 	Property          string `json:"Property,omitempty"`
-	Attributes        struct {
+	Attributes        *struct {
 		Pmin        string `json:"Pmin,omitempty"`
 		Pmax        string `json:"Pmax,omitempty"`
 		Step        string `json:"Step,omitempty"`
