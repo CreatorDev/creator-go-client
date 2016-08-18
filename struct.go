@@ -13,12 +13,22 @@ type AccessKey struct {
 	Secret string        `json:"Secret,omitempty"`
 }
 
-type ConnectivitySubscriptionRequest struct {
+type SubscriptionRequest struct {
 	SubscriptionType string `json:"SubscriptionType"`
-	URL              string `json:"URL"`
+	URL              string `json:"Url"`
+
+	AcceptContentType string `json:"AcceptContentType,omitempty"`
+	Property          string `json:"Property,omitempty"`
+	Attributes        struct {
+		Pmin        string `json:"Pmin,omitempty"`
+		Pmax        string `json:"Pmax,omitempty"`
+		Step        string `json:"Step,omitempty"`
+		LessThan    string `json:"LessThan,omitempty"`
+		GreaterThan string `json:"GreaterThan,omitempty"`
+	} `json:"Attributes,omitempty"`
 }
 
-type ConnectivitySubscriptionResponse struct {
+type SubscriptionResponse struct {
 	ID    string        `json:"ID"`
 	Links hateoas.Links `json:"Links"`
 }

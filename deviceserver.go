@@ -228,12 +228,12 @@ func (d *Client) Delete(url string, headers map[string]string) error {
 		d.log.Request(req, "Do(): %s", err.Error())
 		return err
 	}
-	if resp.StatusCode > 400 {
+	if resp.StatusCode >= 400 {
 		d.log.Request(req, "status: %s(%d)", resp.Status, resp.StatusCode)
 		return fmt.Errorf("http status: %d", resp.StatusCode)
 	}
 
-	d.log.Request(req, "Delete(): OK")
+	d.log.Request(req, "Delete(): %d", resp.StatusCode)
 	return nil
 }
 
@@ -260,18 +260,20 @@ func (d *Client) CreateAccessKey(name string) (*AccessKey, error) {
 	return &key, nil
 }
 
-func (d *Client) SubscribeConnectivity(req *ConnectivitySubscriptionRequest, resp *ConnectivitySubscriptionResponse) error {
+func (d *Client) Subscribe(endpoint string, req *SubscriptionRequest, resp *SubscriptionResponse) error {
 	var entry EntryPoint
-	err := d.Get(d.baseUrl, d.authGetJson, &entry)
+	err := d.Get(endpoint, d.authGetJson, &entry)
 	if err != nil {
 		d.log.Error("Get(): %s", err.Error())
 		return err
 	}
+
+	d.log.Info("subscribe: %s", endpoint)
 	for _, l := range entry.Links {
-		d.log.Info("entrypoint: Rel %s Href %s Type %s", l.Rel, l.Href, l.Type)
+		d.log.Info("link: Rel %s Href %s Type %s", l.Rel, l.Href, l.Type)
 	}
 
-	endpoint, err := entry.Links.GetLink("subscriptions")
+	subscriptions, err := entry.Links.GetLink("subscriptions")
 	if err != nil {
 		d.log.Error("GetLink(): %s", err.Error())
 		return err
@@ -283,10 +285,14 @@ func (d *Client) SubscribeConnectivity(req *ConnectivitySubscriptionRequest, res
 		return err
 	}
 
-	err = d.Post(endpoint.Href,
+	err = d.Post(subscriptions.Href,
 		d.authPostJson,
 		bytes.NewBuffer(buf),
 		resp)
 
 	return err
+}
+
+func (d *Client) Unsubscribe(endpoint string) error {
+	return d.Delete(endpoint, d.authPostJson)
 }
