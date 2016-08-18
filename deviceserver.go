@@ -285,8 +285,11 @@ func (d *Client) Subscribe(endpoint string, req *SubscriptionRequest, resp *Subs
 		return err
 	}
 
+	headers := d.authPostJson
+	headers["Content-Type"] = "application/vnd.oma.lwm2m.subscription+json"
+
 	err = d.Post(subscriptions.Href,
-		d.authPostJson,
+		headers,
 		bytes.NewBuffer(buf),
 		resp)
 
