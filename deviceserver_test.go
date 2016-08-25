@@ -5,43 +5,21 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gitlab.flowcloud.systems/creator-ops/logger"
 )
 
-func TestEntry(t *testing.T) {
-	ds, err := Create(&DSConfig{
-		BaseUrl: "https://deviceserver-mv.flowcloud.systems/",
-		PSK:     os.Getenv("DEVICESERVER_PSK"),
-	})
-	assert.Nil(t, err)
-	assert.NotNil(t, ds)
-
-	var entry EntryPoint
-	err = ds.Get(ds.baseUrl, ds.authGetJson, &entry)
-	assert.Nil(t, err)
-	assert.NotZero(t, entry)
-
-	auth, err := entry.Links.GetLink("authenticate")
-	assert.Nil(t, err)
-	assert.NotZero(t, auth.Href)
-	assert.NotZero(t, auth.Rel)
-
-	bob, err := entry.Links.GetLink("bob")
-	assert.NotNil(t, err)
-	assert.Nil(t, bob)
-
-	accesskeys, err := entry.Links.GetLink("accesskeys")
-	assert.Nil(t, err)
-	assert.NotZero(t, accesskeys.Href)
-	assert.NotZero(t, accesskeys.Rel)
-}
-
 func TestCreateKey(t *testing.T) {
-	ds, err := Create(&DSConfig{
+	ds, err := Create(&Config{
 		BaseUrl: "https://deviceserver-mv.flowcloud.systems/",
 		PSK:     os.Getenv("DEVICESERVER_PSK"),
+		Log:     &logger.LogLogger{},
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, ds)
+	defer ds.Close()
+
+	token, _ := ds.TokenPSK()
+	ds.SetBearerToken(token)
 
 	k, err := ds.CreateAccessKey("bob")
 	assert.Nil(t, err)
@@ -50,4 +28,48 @@ func TestCreateKey(t *testing.T) {
 	k2, err := ds.CreateAccessKey("bob")
 	assert.Nil(t, err)
 	assert.NotZero(t, k2)
+
+	err = ds.DeleteAccessKey(k)
+	assert.Nil(t, err)
+
+	err = ds.DeleteAccessKey(k2)
+	assert.Nil(t, err)
+
+}
+
+func TestSubscriptions(t *testing.T) {
+	ds, err := Create(&Config{
+		BaseUrl: "https://deviceserver-mv.flowcloud.systems/",
+		PSK:     os.Getenv("DEVICESERVER_PSK"),
+		Log:     &logger.LogLogger{},
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, ds)
+	defer ds.Close()
+
+	token, _ := ds.TokenPSK()
+	ds.SetBearerToken(token)
+
+	k, err := ds.CreateAccessKey("bob")
+	assert.Nil(t, err)
+	assert.NotZero(t, k)
+
+	err = ds.Authenticate(k)
+	assert.Nil(t, err)
+
+	sub := SubscriptionRequest{
+		SubscriptionType: "ClientConnected",
+		URL:              "http://127.0.0.1/mywebhook",
+	}
+	var resp SubscriptionResponse
+
+	err = ds.Subscribe("", &sub, &resp)
+	assert.Nil(t, err)
+	assert.NotEqual(t, "", resp.ID)
+
+	err = ds.Unsubscribe(&resp)
+	assert.Nil(t, err)
+
+	err = ds.DeleteAccessKey(k)
+	assert.Nil(t, err)
 }

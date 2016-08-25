@@ -38,6 +38,13 @@ type OrgClaim struct {
 	Exp   int64 `json:"exp"`
 }
 
+type OAuthToken struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+}
+
 type Error struct {
 	ErrorCode    string `json:"ErrorCode"`
 	ErrorMessage string `json:"ErrorMessage"`
