@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.flowcloud.systems/creator-ops/go-deviceserver-client"
+	ds "gitlab.flowcloud.systems/creator-ops/go-deviceserver-client"
 )
 
 func main() {
-	config := deviceserver.Config{
-		PSK: os.Getenv("DEVICESERVER_PSK"),
+	token, err := ds.TokenFromPSK(os.Getenv("DEVICESERVER_PSK"))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
 	}
-	client, _ := deviceserver.Create(&config)
-	token, _ := client.TokenPSK()
 	fmt.Println(token)
 }

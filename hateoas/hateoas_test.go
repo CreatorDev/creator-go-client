@@ -1,8 +1,10 @@
 package hateoas
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -99,7 +101,7 @@ func TestEntry(t *testing.T) {
 	ts := CreateTestServer()
 	defer ts.Close()
 
-	client, _ := Create(&Client{
+	client := Create(&Client{
 		EntryURL: ts.URL,
 	})
 
@@ -115,7 +117,7 @@ func TestEntry(t *testing.T) {
 func TestBob(t *testing.T) {
 	assert := assert.New(t)
 
-	client, _ := Create(&Client{
+	client := Create(&Client{
 		EntryURL: ts.URL,
 	})
 
@@ -140,4 +142,59 @@ func TestBob(t *testing.T) {
 
 	resp, err = client.Get("", Navigate{"bob", "nowhere"}, nil, nil, &where)
 	assert.Equal(ErrorLinkNotFound, err)
+}
+
+type httpLogger struct {
+	http.Client
+	logged []string
+}
+
+func (h *httpLogger) Do(req *http.Request) (*http.Response, error) {
+	resp, err := h.Client.Do(req)
+	if resp != nil {
+		h.logged = append(h.logged, fmt.Sprintf("%s %s %d", req.Method, req.URL.String(), resp.StatusCode))
+	} else {
+		h.logged = append(h.logged, fmt.Sprintf("%s %s (%s)", req.Method, req.URL.String(), err.Error()))
+	}
+	return resp, err
+}
+
+func TestLogger(t *testing.T) {
+	assert := assert.New(t)
+
+	logger := &httpLogger{Client: http.Client{}}
+	client := Create(&Client{
+		EntryURL: ts.URL,
+		Http:     logger,
+	})
+
+	var bob Bob
+	_, err := client.Get("", Navigate{"bob"}, nil, nil, &bob)
+	assert.Nil(err)
+	assert.Equal("bob", bob.Name)
+	assert.Equal(2, len(logger.logged))
+
+	for _, s := range logger.logged {
+		log.Println(s)
+	}
+}
+
+func TestSkipTLS(t *testing.T) {
+	assert := assert.New(t)
+
+	client := Create(&Client{
+		EntryURL: ts.URL,
+		Http: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		},
+	})
+
+	var bob Bob
+	_, err := client.Get("", Navigate{"bob"}, nil, nil, &bob)
+	assert.Nil(err)
+	assert.Equal("bob", bob.Name)
 }

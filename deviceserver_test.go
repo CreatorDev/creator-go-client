@@ -1,60 +1,73 @@
 package deviceserver
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.flowcloud.systems/creator-ops/logger"
+	"gitlab.flowcloud.systems/creator-ops/go-deviceserver-client/hateoas"
 )
 
+var (
+	deviceserverURL = os.Getenv("DEVICESERVER_URL")
+	deviceserverPSK = os.Getenv("DEVICESERVER_PSK")
+)
+
+func init() {
+	if deviceserverURL == "" {
+		fmt.Println("Please provide env var DEVICESERVER_URL")
+		os.Exit(1)
+	}
+	if deviceserverPSK == "" {
+		fmt.Println("Please provide env var DEVICESERVER_PSK")
+		os.Exit(1)
+	}
+}
+
 func TestCreateKey(t *testing.T) {
-	ds, err := Create(&Config{
-		BaseUrl: "https://deviceserver-mv.flowcloud.systems/",
-		PSK:     os.Getenv("DEVICESERVER_PSK"),
-		Log:     &logger.LogLogger{},
-	})
+	d, err := Create(hateoas.Create(&hateoas.Client{
+		EntryURL: deviceserverURL,
+	}))
 	assert.Nil(t, err)
-	assert.NotNil(t, ds)
-	defer ds.Close()
+	assert.NotNil(t, d)
+	defer d.Close()
 
-	token, _ := ds.TokenPSK()
-	ds.SetBearerToken(token)
+	token, _ := TokenFromPSK(deviceserverPSK)
+	d.SetBearerToken(token)
 
-	k, err := ds.CreateAccessKey("bob")
+	k, err := d.CreateAccessKey("bob")
 	assert.Nil(t, err)
 	assert.NotZero(t, k)
 
-	k2, err := ds.CreateAccessKey("bob")
+	k2, err := d.CreateAccessKey("bob")
 	assert.Nil(t, err)
 	assert.NotZero(t, k2)
 
-	err = ds.DeleteAccessKey(k)
+	err = d.DeleteAccessKey(k)
 	assert.Nil(t, err)
 
-	err = ds.DeleteAccessKey(k2)
+	err = d.DeleteAccessKey(k2)
 	assert.Nil(t, err)
 
 }
 
 func TestSubscriptions(t *testing.T) {
-	ds, err := Create(&Config{
-		BaseUrl: "https://deviceserver-mv.flowcloud.systems/",
-		PSK:     os.Getenv("DEVICESERVER_PSK"),
-		Log:     &logger.LogLogger{},
-	})
+	d, err := Create(hateoas.Create(&hateoas.Client{
+		EntryURL: deviceserverURL,
+	}))
 	assert.Nil(t, err)
-	assert.NotNil(t, ds)
-	defer ds.Close()
+	assert.NotNil(t, d)
+	defer d.Close()
 
-	token, _ := ds.TokenPSK()
-	ds.SetBearerToken(token)
+	token, _ := TokenFromPSK(deviceserverPSK)
+	d.SetBearerToken(token)
 
-	k, err := ds.CreateAccessKey("bob")
+	k, err := d.CreateAccessKey("bob")
 	assert.Nil(t, err)
 	assert.NotZero(t, k)
 
-	err = ds.Authenticate(k)
+	err = d.Authenticate(k)
 	assert.Nil(t, err)
 
 	sub := SubscriptionRequest{
@@ -63,13 +76,13 @@ func TestSubscriptions(t *testing.T) {
 	}
 	var resp SubscriptionResponse
 
-	err = ds.Subscribe("", &sub, &resp)
+	err = d.Subscribe("", &sub, &resp)
 	assert.Nil(t, err)
 	assert.NotEqual(t, "", resp.ID)
 
-	err = ds.Unsubscribe(&resp)
+	err = d.Unsubscribe(&resp)
 	assert.Nil(t, err)
 
-	err = ds.DeleteAccessKey(k)
+	err = d.DeleteAccessKey(k)
 	assert.Nil(t, err)
 }

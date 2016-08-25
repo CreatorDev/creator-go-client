@@ -2,12 +2,35 @@ package deviceserver
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/square/go-jose"
 )
 
 type JwtSigner struct {
 	signer jose.Signer
+}
+
+func TokenFromPSK(psk string) (token string, err error) {
+
+	signer := JwtSigner{}
+	err = signer.Init(jose.HS256, []byte(psk))
+	if err != nil {
+		return "", err
+	}
+
+	// the lifetime should be shorter, but think I'm hitting some timezone issues at the moment
+	orgClaim := OrgClaim{
+		OrgID: 0,
+		Exp:   time.Now().Add(60 * time.Minute).Unix(),
+	}
+
+	serialized, err := signer.MarshallSignSerialize(orgClaim)
+	if err != nil {
+		return "", err
+	}
+
+	return serialized, nil
 }
 
 func (s *JwtSigner) Init(alg jose.SignatureAlgorithm, signingKey interface{}) error {

@@ -13,6 +13,7 @@ import (
 var (
 	ErrorLinkNotFound = errors.New("Link not found")
 	ErrorHttpStatus   = errors.New("HTTP status error")
+	ErrorBadConfig    = errors.New("bad config")
 )
 
 type Link struct {
@@ -39,13 +40,20 @@ type SimpleEndpoint struct {
 	Links Links `json:"Links"`
 }
 
+// HTTPDoer would normally be an instance of *http.Client but
+// by making it an interface we allow wrapping to permit
+// logging or caching etc
+type HTTPDoer interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
 type Client struct {
 	EntryURL       string
 	DefaultHeaders Headers
-	Http           *http.Client
+	Http           HTTPDoer
 }
 
-func Create(config *Client) (*Client, error) {
+func Create(config *Client) *Client {
 	client := config
 	if client == nil {
 		client = &Client{}
@@ -59,7 +67,7 @@ func Create(config *Client) (*Client, error) {
 			"Content-Type": "application/json",
 		}
 	}
-	return client, nil
+	return client
 }
 
 func (c *Client) Do(method string, url string, navigateLinks Navigate, headers Headers, body io.Reader, result interface{}) (*http.Response, error) {
