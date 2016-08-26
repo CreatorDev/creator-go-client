@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -173,10 +172,6 @@ func TestLogger(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal("bob", bob.Name)
 	assert.Equal(2, len(logger.logged))
-
-	for _, s := range logger.logged {
-		log.Println(s)
-	}
 }
 
 func TestSkipTLS(t *testing.T) {

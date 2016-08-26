@@ -93,6 +93,10 @@ func (d *Client) RefreshAuth(refresh_token string) error {
 	return err
 }
 
+// Subscribe sets up webhook subscriptions, i.e. COAP observations.
+// The `endpoint` can be
+// - "" (=entrypoint) to subscribe to ClientConnected/ClientDisconnected events
+// - a specific resource "self" URL to subscribe to observations on that resource
 func (d *Client) Subscribe(endpoint string, req *SubscriptionRequest, resp *SubscriptionResponse) error {
 	buf, err := json.Marshal(req)
 	if err != nil {
@@ -112,15 +116,21 @@ func (d *Client) Unsubscribe(subscription *SubscriptionResponse) error {
 	return d.DeleteSelf(&subscription.Links)
 }
 
+// Delete performs DELETE on the specified resource
 func (d *Client) Delete(endpoint string) error {
 	_, err := d.hclient.Delete(endpoint, nil, nil, nil, nil)
 	return err
 }
 
+// DeleteSelf will find the "self" link and DELETE that
 func (d *Client) DeleteSelf(links *h.Links) error {
 	self, err := links.Get("self")
 	if err != nil {
 		return nil
 	}
 	return d.Delete(self.Href)
+}
+
+func (d *Client) HATEOAS() *h.Client {
+	return d.hclient
 }

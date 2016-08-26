@@ -80,6 +80,9 @@ func (c *Client) Do(method string, url string, navigateLinks Navigate, headers H
 		if err != nil {
 			return resp, err
 		}
+		if resp.StatusCode >= http.StatusBadRequest {
+			return resp, ErrorHttpStatus
+		}
 		link, err := ep.Links.Get(nav)
 		if err != nil {
 			return resp, ErrorLinkNotFound
@@ -114,7 +117,7 @@ func (c *Client) Do(method string, url string, navigateLinks Navigate, headers H
 	}
 	resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode >= http.StatusBadRequest {
 		return resp, ErrorHttpStatus
 	}
 
