@@ -13,6 +13,18 @@ type AccessKey struct {
 	Secret string        `json:"Secret,omitempty"`
 }
 
+type PageInfo struct {
+	TotalCount int `json:"TotalCount"`
+	ItemsCount int `json:"ItemsCount"`
+	StartIndex int `json:"StartIndex"`
+}
+
+type AccessKeys struct {
+	PageInfo PageInfo      `json:"PageInfo "`
+	Items    []AccessKey   `json:"Items"`
+	Links    hateoas.Links `json:"Links"`
+}
+
 type SubscriptionRequest struct {
 	SubscriptionType string `json:"SubscriptionType"`
 	URL              string `json:"Url"`

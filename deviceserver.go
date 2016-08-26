@@ -56,6 +56,17 @@ func (d *Client) DeleteAccessKey(key *AccessKey) error {
 	return d.DeleteSelf(&key.Links)
 }
 
+func (d *Client) GetAccessKeys() (*AccessKeys, error) {
+	var keys AccessKeys
+	_, err := d.hclient.Get("",
+		h.Navigate{"accesskeys"},
+		nil,
+		nil,
+		&keys,
+	)
+	return &keys, err
+}
+
 func (d *Client) Authenticate(credentials *AccessKey) error {
 	var token OAuthToken
 	_, err := d.hclient.PostForm("",

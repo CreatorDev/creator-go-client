@@ -48,6 +48,7 @@ func (h *httpLogger) Do(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
+// TestAuth handles everything to do with keys and tokens etc
 func TestAuth(t *testing.T) {
 	logger := &httpLogger{dump: true}
 	d, err := Create(hateoas.Create(&hateoas.Client{
@@ -81,6 +82,14 @@ func TestAuth(t *testing.T) {
 
 	err = d.Authenticate(k)
 	assert.Nil(t, err)
+
+	keys, err := d.GetAccessKeys()
+	assert.Nil(t, err)
+	justKeys := []string{}
+	for _, k := range keys.Items {
+		justKeys = append(justKeys, k.Key)
+	}
+	assert.Contains(t, justKeys, k.Key)
 
 	// var entry hateoas.SimpleEndpoint
 	_, err = d.HATEOAS().Get("", nil, nil, nil, &entry)
