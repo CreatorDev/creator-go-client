@@ -17,14 +17,17 @@ var (
 	ErrorBadConfig    = errors.New("bad config")
 )
 
+// Link is the main HATEOAS link object
 type Link struct {
 	Rel  string `json:"rel"`
 	Href string `json:"href"`
 	Type string `json:"type"`
 }
 
+// Links is just an array of Link, but with some helper methods
 type Links []Link
 
+// Get returns the link matching the specified `rel` name
 func (l Links) Get(rel string) (*Link, error) {
 	for _, link := range l {
 		if link.Rel == rel {
@@ -34,6 +37,8 @@ func (l Links) Get(rel string) (*Link, error) {
 	return nil, ErrorLinkNotFound
 }
 
+// Self is a small wrapper around Get, mostly useful when you don't need to worry if the link isn't actually there
+// (e.g. when printing debug stuff to a CLI output)
 func (l Links) Self() string {
 	link, err := l.Get("self")
 	if err != nil {
@@ -42,9 +47,13 @@ func (l Links) Self() string {
 	return link.Href
 }
 
+// Navigate specifies a list of links to be traversed
 type Navigate []string
+
+// Headers is the HTTP headers to be added to a request
 type Headers map[string]string
 
+// SimpleEndpoint is used when navigating links on endpoints
 type SimpleEndpoint struct {
 	Links Links `json:"Links"`
 }
@@ -56,12 +65,14 @@ type HTTPDoer interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
+// Client is the main object for executing requests
 type Client struct {
 	EntryURL       string
 	DefaultHeaders Headers
 	Http           HTTPDoer
 }
 
+// Create will populate some defaults into a provided Client structure
 func Create(config *Client) *Client {
 	client := config
 	if client == nil {
@@ -79,6 +90,8 @@ func Create(config *Client) *Client {
 	return client
 }
 
+// Do will start at the provided URL (or default to `Client.EntryURL`) and traverse the links specified by `navigateLinks` (with GET)
+// before finally issuing `method` to the resultant URL
 func (c *Client) Do(method string, url string, navigateLinks Navigate, headers Headers, body io.Reader, result interface{}) (*http.Response, error) {
 	if url == "" {
 		url = c.EntryURL
@@ -140,14 +153,17 @@ func (c *Client) Do(method string, url string, navigateLinks Navigate, headers H
 	return resp, nil
 }
 
+// Get is a small wrapper around Do
 func (c *Client) Get(url string, navigateLinks Navigate, headers Headers, body io.Reader, response interface{}) (*http.Response, error) {
 	return c.Do("GET", url, navigateLinks, headers, body, response)
 }
 
+// Post is a small wrapper around Do
 func (c *Client) Post(url string, navigateLinks Navigate, headers Headers, body io.Reader, response interface{}) (*http.Response, error) {
 	return c.Do("POST", url, navigateLinks, headers, body, response)
 }
 
+// PostForm is a small wrapper around Do
 func (c *Client) PostForm(url string, navigateLinks Navigate, headers Headers, data url.Values, response interface{}) (*http.Response, error) {
 	if headers == nil {
 		headers = Headers{}
@@ -156,6 +172,7 @@ func (c *Client) PostForm(url string, navigateLinks Navigate, headers Headers, d
 	return c.Do("POST", url, navigateLinks, headers, strings.NewReader(data.Encode()), response)
 }
 
+// Delete is a small wrapper around Do
 func (c *Client) Delete(url string, navigateLinks Navigate, headers Headers, body io.Reader, response interface{}) (*http.Response, error) {
 	return c.Do("DELETE", url, navigateLinks, headers, body, response)
 }
