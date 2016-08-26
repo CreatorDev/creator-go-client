@@ -7,11 +7,13 @@ import (
 	"github.com/square/go-jose"
 )
 
+// JwtSigner is the main object for simplified JWT operations
 type JwtSigner struct {
 	signer jose.Signer
 }
 
-func TokenFromPSK(psk string) (token string, err error) {
+// TokenFromPSK generates an JWT with signed OrgClaim
+func TokenFromPSK(psk string, orgID int) (token string, err error) {
 
 	signer := JwtSigner{}
 	err = signer.Init(jose.HS256, []byte(psk))
@@ -21,7 +23,7 @@ func TokenFromPSK(psk string) (token string, err error) {
 
 	// the lifetime should be shorter, but think I'm hitting some timezone issues at the moment
 	orgClaim := OrgClaim{
-		OrgID: 0,
+		OrgID: orgID,
 		Exp:   time.Now().Add(60 * time.Minute).Unix(),
 	}
 
@@ -33,19 +35,21 @@ func TokenFromPSK(psk string) (token string, err error) {
 	return serialized, nil
 }
 
+// Init creates JOSE signer
 func (s *JwtSigner) Init(alg jose.SignatureAlgorithm, signingKey interface{}) error {
 	var err error
 	s.signer, err = jose.NewSigner(jose.HS256, signingKey)
 	return err
 }
 
+// MarshallSignSerialize returns a compacted serialised JWT from a claims structure
 func (s *JwtSigner) MarshallSignSerialize(in interface{}) (string, error) {
-	claimJson, err := json.Marshal(in)
+	claimJSON, err := json.Marshal(in)
 	if err != nil {
 		return "", err
 	}
 
-	object, err := s.signer.Sign(claimJson)
+	object, err := s.signer.Sign(claimJSON)
 	if err != nil {
 		return "", err
 	}
@@ -54,6 +58,7 @@ func (s *JwtSigner) MarshallSignSerialize(in interface{}) (string, error) {
 	return serialized, err
 }
 
+// ParseVerify performs signature validation and returns byte string
 func ParseVerify(serialized []byte, signingKey interface{}) ([]byte, error) {
 	object, err := jose.ParseSigned(string(serialized))
 	if err != nil {

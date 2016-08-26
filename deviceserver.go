@@ -12,15 +12,20 @@ import (
 )
 
 var (
+	// ErrorInvalidKeyName can be sent in response to CreateAccessKey
 	ErrorInvalidKeyName = errors.New("Invalid key name")
 )
 
+// Client is the main object for interacting with the deviceserver
 type Client struct {
 	hclient      *h.Client
 	token        OAuthToken
 	tokenExpires time.Time
 }
 
+// Create constructs a deviceserver client from a provided hateoas client.
+// If you want logging/caching etc, you should set those options during
+// hateoas client initialisation
 func Create(hclient *h.Client) (*Client, error) {
 	if hclient == nil ||
 		hclient.EntryURL == "" {
@@ -34,10 +39,12 @@ func Create(hclient *h.Client) (*Client, error) {
 	return &d, nil
 }
 
+// Close will clean things up as required
 func (d *Client) Close() {
 
 }
 
+// SetBearerToken sets the Authorization header on the underlying hateoas client
 func (d *Client) SetBearerToken(token string) {
 	if token != "" {
 		d.hclient.DefaultHeaders["Authorization"] = "Bearer " + token
@@ -46,6 +53,9 @@ func (d *Client) SetBearerToken(token string) {
 	}
 }
 
+// CreateAccessKey does what it says on the tin. The client
+// should already be authenticated somehow, by calling either
+// Authenticate/RefreshAuth/SetBearerToken
 func (d *Client) CreateAccessKey(name string) (*AccessKey, error) {
 	var key AccessKey
 
@@ -63,10 +73,12 @@ func (d *Client) CreateAccessKey(name string) (*AccessKey, error) {
 	return &key, err
 }
 
+// DeleteAccessKey does what it says on the tin
 func (d *Client) DeleteAccessKey(key *AccessKey) error {
 	return d.DeleteSelf(&key.Links)
 }
 
+// GetAccessKeys returns the list of accesskeys in this organisation
 func (d *Client) GetAccessKeys(previous *AccessKeys) (*AccessKeys, error) {
 	if previous == nil {
 		var keys AccessKeys
@@ -92,6 +104,7 @@ func (d *Client) GetAccessKeys(previous *AccessKeys) (*AccessKeys, error) {
 	return &keys, err
 }
 
+// Authenticate uses the provided key/secret to obtain an access_token/refresh_token
 func (d *Client) Authenticate(credentials *AccessKey) error {
 	var token OAuthToken
 	_, err := d.hclient.PostForm("",
@@ -111,14 +124,15 @@ func (d *Client) Authenticate(credentials *AccessKey) error {
 	return err
 }
 
-func (d *Client) RefreshAuth(refresh_token string) error {
+// RefreshAuth uses the provided refresh_token obtain an access_token/refresh_token
+func (d *Client) RefreshAuth(refreshToken string) error {
 	var token OAuthToken
 	_, err := d.hclient.PostForm("",
 		h.Navigate{"authenticate"},
 		nil,
 		url.Values{
 			"grant_type":    []string{"refresh_token"},
-			"refresh_token": []string{refresh_token},
+			"refresh_token": []string{refreshToken},
 		},
 		&token)
 	if err == nil {
@@ -167,6 +181,8 @@ func (d *Client) DeleteSelf(links *h.Links) error {
 	return d.Delete(self.Href)
 }
 
+// HATEOAS exposes the underlying hateoas client so that you
+// can use that where necessary. Shouldn't be needed often.
 func (d *Client) HATEOAS() *h.Client {
 	return d.hclient
 }

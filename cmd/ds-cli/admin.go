@@ -10,6 +10,7 @@ import (
 
 var (
 	deviceserverPSK string
+	organisationID  int
 )
 
 var pskFlag = cli.StringFlag{
@@ -19,16 +20,24 @@ var pskFlag = cli.StringFlag{
 	Usage:       "(required)",
 }
 
-var admin = cli.Command{
-	Name:      "admin",
+var organisationFlag = cli.IntFlag{
+	Name:        "org-id",
+	Destination: &organisationID,
+	Usage:       "If provided",
+	Value:       0,
+}
+
+var adminToken = cli.Command{
+	Name:      "admin-token",
 	Hidden:    true,
 	Usage:     "Uses PSK to generate a JWT access_token for admin purposes",
 	ArgsUsage: " ",
 	Flags: []cli.Flag{
+		organisationFlag,
 		pskFlag,
 	},
 	Action: func(c *cli.Context) error {
-		token, err := ds.TokenFromPSK(deviceserverPSK)
+		token, err := ds.TokenFromPSK(deviceserverPSK, organisationID)
 		if err != nil {
 			return err
 		}
@@ -40,9 +49,10 @@ var admin = cli.Command{
 var createOrg = cli.Command{
 	Name:      "create-org",
 	Hidden:    true,
-	Usage:     "Uses PSK to create a new organisation key/secret",
+	Usage:     "Uses PSK to create a new organisation key/secret. If the specified organisation ID is zero, a new non-zero one will be automatically created.",
 	ArgsUsage: "<name>",
 	Flags: []cli.Flag{
+		organisationFlag,
 		pskFlag,
 	},
 	Action: func(c *cli.Context) error {
@@ -55,7 +65,7 @@ var createOrg = cli.Command{
 		}
 		defer d.Close()
 
-		token, _ := ds.TokenFromPSK(deviceserverPSK)
+		token, _ := ds.TokenFromPSK(deviceserverPSK, organisationID)
 		d.SetBearerToken(token)
 
 		key, err := d.CreateAccessKey(keyName)

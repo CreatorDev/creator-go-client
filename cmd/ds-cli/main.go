@@ -81,11 +81,14 @@ func main() {
 		},
 	}
 	app.Commands = []cli.Command{
-		admin,     // hidden
-		createOrg, // hidden
+		// keys
 		createKey,
 		deleteKey,
 		listKeys,
+
+		// admin stuff - hidden
+		adminToken,
+		createOrg,
 	}
 
 	app.Run(os.Args)

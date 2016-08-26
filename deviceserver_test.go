@@ -60,7 +60,7 @@ func TestAuth(t *testing.T) {
 	defer d.Close()
 
 	// set token from admin PSK in order to create the first key
-	token, _ := TokenFromPSK(deviceserverPSK)
+	token, _ := TokenFromPSK(deviceserverPSK, 0)
 	d.SetBearerToken(token)
 
 	k, err := d.CreateAccessKey("bob")
@@ -83,7 +83,7 @@ func TestAuth(t *testing.T) {
 	err = d.Authenticate(k)
 	assert.Nil(t, err)
 
-	keys, err := d.GetAccessKeys()
+	keys, err := d.GetAccessKeys(nil)
 	assert.Nil(t, err)
 	justKeys := []string{}
 	for _, k := range keys.Items {
@@ -121,7 +121,7 @@ func TestSubscriptions(t *testing.T) {
 	assert.NotNil(t, d)
 	defer d.Close()
 
-	token, _ := TokenFromPSK(deviceserverPSK)
+	token, _ := TokenFromPSK(deviceserverPSK, 0)
 	d.SetBearerToken(token)
 
 	k, err := d.CreateAccessKey("bob")
