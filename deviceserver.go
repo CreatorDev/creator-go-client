@@ -3,11 +3,16 @@ package deviceserver
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
 
 	h "gitlab.flowcloud.systems/creator-ops/go-deviceserver-client/hateoas"
+)
+
+var (
+	ErrorInvalidKeyName = errors.New("Invalid key name")
 )
 
 type Client struct {
@@ -43,6 +48,12 @@ func (d *Client) SetBearerToken(token string) {
 
 func (d *Client) CreateAccessKey(name string) (*AccessKey, error) {
 	var key AccessKey
+
+	// key names are not required, but make life much easier
+	if name == "" {
+		return nil, ErrorInvalidKeyName
+	}
+
 	_, err := d.hclient.Post("",
 		h.Navigate{"accesskeys"},
 		nil,
