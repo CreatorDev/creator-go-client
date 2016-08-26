@@ -1,3 +1,4 @@
+// Generic-ish HATEOAS client for golang
 package hateoas
 
 import (
