@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/urfave/cli"
@@ -17,6 +16,7 @@ var pskFlag = cli.StringFlag{
 	Name:        "psk",
 	EnvVar:      "DEVICESERVER_PSK",
 	Destination: &deviceserverPSK,
+	Usage:       "(required)",
 }
 
 var admin = cli.Command{
@@ -63,12 +63,7 @@ var createOrg = cli.Command{
 			return err
 		}
 
-		buf, err := json.MarshalIndent(&key, "", "  ")
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(buf))
-
-		return nil
+		err = WriteCredentials(key)
+		return err
 	},
 }

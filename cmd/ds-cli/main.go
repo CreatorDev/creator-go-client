@@ -29,6 +29,8 @@ func ReadCredentials() (*ds.AccessKey, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer credFile.Close()
+
 	buf, err := ioutil.ReadAll(credFile)
 	if err != nil {
 		return nil, err
@@ -40,6 +42,23 @@ func ReadCredentials() (*ds.AccessKey, error) {
 	}
 
 	return &key, nil
+}
+
+func WriteCredentials(key *ds.AccessKey) error {
+	if credentialsFile[:2] == "~/" {
+		credentialsFile = strings.Replace(credentialsFile, "~", os.Getenv("HOME"), 1)
+	}
+	credFile, err := os.Create(credentialsFile)
+	if err != nil {
+		return err
+	}
+	defer credFile.Close()
+	buf, err := json.MarshalIndent(&key, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = credFile.Write(buf)
+	return err
 }
 
 func main() {

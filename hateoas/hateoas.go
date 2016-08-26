@@ -33,6 +33,14 @@ func (l Links) Get(rel string) (*Link, error) {
 	return nil, ErrorLinkNotFound
 }
 
+func (l Links) Self() string {
+	link, err := l.Get("self")
+	if err != nil {
+		return `(unable to find "self" link)`
+	}
+	return link.Href
+}
+
 type Navigate []string
 type Headers map[string]string
 

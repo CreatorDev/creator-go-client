@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -11,10 +10,12 @@ import (
 	"gitlab.flowcloud.systems/creator-ops/go-deviceserver-client/hateoas"
 )
 
+const keysCategory = "Key management"
+
 var createKey = cli.Command{
 	Name:      "create-key",
 	Aliases:   []string{"ck"},
-	Category:  "keys",
+	Category:  keysCategory,
 	Usage:     "Create a new key/secret",
 	ArgsUsage: "<name>",
 	Flags:     []cli.Flag{},
@@ -43,12 +44,7 @@ var createKey = cli.Command{
 			return err
 		}
 
-		buf, err := json.MarshalIndent(&key, "", "  ")
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(buf))
-
+		fmt.Printf("Key: %s\nSecret: %s\nSelf: %s\n", key.Key, key.Secret, key.Links.Self())
 		return nil
 	},
 }
@@ -56,7 +52,7 @@ var createKey = cli.Command{
 var listKeys = cli.Command{
 	Name:      "list-keys",
 	Aliases:   []string{"lk"},
-	Category:  "keys",
+	Category:  keysCategory,
 	Usage:     "Lists the known access keys",
 	ArgsUsage: " ",
 	Flags:     []cli.Flag{},
@@ -85,14 +81,7 @@ var listKeys = cli.Command{
 		}
 
 		for i, key := range keys.Items {
-			var selfHref string
-			self, err := key.Links.Get("self")
-			if err != nil {
-				selfHref = "? unable to find self link"
-			} else {
-				selfHref = self.Href
-			}
-			fmt.Printf("[%d] '%s' = %s\n  %s\n\n", i, key.Name, key.Key, selfHref)
+			fmt.Printf("[%d] '%s' = %s\n  %s\n\n", i, key.Name, key.Key, key.Links.Self())
 		}
 
 		return nil
@@ -102,7 +91,7 @@ var listKeys = cli.Command{
 var deleteKey = cli.Command{
 	Name:      "delete-key",
 	Aliases:   []string{"dk"},
-	Category:  "keys",
+	Category:  keysCategory,
 	Usage:     "Delete the specified key",
 	ArgsUsage: "<key self URL>",
 	Flags:     []cli.Flag{},
