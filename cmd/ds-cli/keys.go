@@ -44,7 +44,11 @@ var createKey = cli.Command{
 			return err
 		}
 
-		fmt.Printf("Key: %s\nSecret: %s\nSelf: %s\n", key.Key, key.Secret, key.Links.Self())
+		fmt.Printf("Name:   %s\nKey:    %s\nSecret: %s\nSelf:   %s\n",
+			key.Name,
+			key.Key,
+			key.Secret,
+			key.Links.Self())
 		return nil
 	},
 }
@@ -75,13 +79,21 @@ var listKeys = cli.Command{
 			return err
 		}
 
-		keys, err := d.GetAccessKeys()
-		if err != nil {
-			return err
-		}
-
-		for i, key := range keys.Items {
-			fmt.Printf("[%d] '%s' = %s\n  %s\n\n", i, key.Name, key.Key, key.Links.Self())
+		var previous *ds.AccessKeys = nil
+		count := 0
+		for {
+			keys, err := d.GetAccessKeys(previous)
+			if err != nil {
+				return err
+			}
+			if keys == nil {
+				break
+			}
+			for _, key := range keys.Items {
+				fmt.Printf("[%d] '%s' = %s\n  %s\n\n", count, key.Name, key.Key, key.Links.Self())
+				count++
+			}
+			previous = keys
 		}
 
 		return nil

@@ -64,6 +64,10 @@ var createOrg = cli.Command{
 		}
 
 		err = WriteCredentials(key)
-		return err
+		if err != nil {
+			return err
+		}
+		fmt.Println("OK")
+		return nil
 	},
 }

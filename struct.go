@@ -14,13 +14,14 @@ type AccessKey struct {
 }
 
 type PageInfo struct {
-	TotalCount int `json:"TotalCount"`
-	ItemsCount int `json:"ItemsCount"`
-	StartIndex int `json:"StartIndex"`
+	TotalCount int           `json:"TotalCount"`
+	ItemsCount int           `json:"ItemsCount"`
+	StartIndex int           `json:"StartIndex"`
+	Links      hateoas.Links `json:"Links,omitempty"`
 }
 
 type AccessKeys struct {
-	PageInfo PageInfo      `json:"PageInfo "`
+	PageInfo PageInfo      `json:"PageInfo"`
 	Items    []AccessKey   `json:"Items"`
 	Links    hateoas.Links `json:"Links"`
 }

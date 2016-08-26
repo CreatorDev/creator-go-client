@@ -67,14 +67,28 @@ func (d *Client) DeleteAccessKey(key *AccessKey) error {
 	return d.DeleteSelf(&key.Links)
 }
 
-func (d *Client) GetAccessKeys() (*AccessKeys, error) {
+func (d *Client) GetAccessKeys(previous *AccessKeys) (*AccessKeys, error) {
+	if previous == nil {
+		var keys AccessKeys
+		_, err := d.hclient.Get("",
+			h.Navigate{"accesskeys"},
+			nil,
+			nil,
+			&keys)
+		return &keys, err
+	}
+
+	next, err := previous.PageInfo.Links.Get("next")
+	if err == h.ErrorLinkNotFound {
+		return nil, nil
+	}
+
 	var keys AccessKeys
-	_, err := d.hclient.Get("",
-		h.Navigate{"accesskeys"},
+	_, err = d.hclient.Get(next.Href,
 		nil,
 		nil,
-		&keys,
-	)
+		nil,
+		&keys)
 	return &keys, err
 }
 
