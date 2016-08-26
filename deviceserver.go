@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"time"
 
-	h "gitlab.flowcloud.systems/creator-ops/go-deviceserver-client/hateoas"
+	h "github.com/CreatorKit/go-deviceserver-client/hateoas"
 )
 
 var (

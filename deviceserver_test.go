@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.flowcloud.systems/creator-ops/go-deviceserver-client/hateoas"
+	"github.com/CreatorKit/go-deviceserver-client/hateoas"
 )
 
 var (

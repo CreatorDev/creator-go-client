@@ -1,6 +1,6 @@
 package deviceserver
 
-import "gitlab.flowcloud.systems/creator-ops/go-deviceserver-client/hateoas"
+import "github.com/CreatorKit/go-deviceserver-client/hateoas"
 
 type EntryPoint struct {
 	Links hateoas.Links `json:"Links"`

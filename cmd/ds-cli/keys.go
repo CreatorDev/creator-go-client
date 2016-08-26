@@ -6,8 +6,8 @@ import (
 	"net/url"
 
 	"github.com/urfave/cli"
-	ds "gitlab.flowcloud.systems/creator-ops/go-deviceserver-client"
-	"gitlab.flowcloud.systems/creator-ops/go-deviceserver-client/hateoas"
+	ds "github.com/CreatorKit/go-deviceserver-client"
+	"github.com/CreatorKit/go-deviceserver-client/hateoas"
 )
 
 const keysCategory = "Key management"

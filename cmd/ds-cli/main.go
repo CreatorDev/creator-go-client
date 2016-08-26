@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/urfave/cli"
-	ds "gitlab.flowcloud.systems/creator-ops/go-deviceserver-client"
+	ds "github.com/CreatorKit/go-deviceserver-client"
 )
 
 var (
