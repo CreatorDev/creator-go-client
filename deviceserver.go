@@ -170,6 +170,26 @@ func (d *RESTClient) GetClients(previous *Clients) (*Clients, error) {
 	return &clients, err
 }
 
+func (d *RESTClient) GetObjectTypes(c *Client) (*ObjectTypes, error) {
+	var o ObjectTypes
+	_, err := d.hclient.Get(c.Links.Self(),
+		h.Navigate{"objecttypes"},
+		nil,
+		nil,
+		&o)
+	return &o, err
+}
+
+func (d *RESTClient) GetObjectInstances(o *ObjectType) (*ObjectInstances, error) {
+	var i ObjectInstances
+	_, err := d.hclient.Get(o.Links.Self(),
+		h.Navigate{"instances"},
+		nil,
+		nil,
+		&i)
+	return &i, err
+}
+
 func (d *RESTClient) GetSubscriptions(endpoint string, previous *Subscriptions) (*Subscriptions, error) {
 	if endpoint != "" && previous != nil {
 		return nil, errors.New("cannot get subscriptions for endpoint and previous")

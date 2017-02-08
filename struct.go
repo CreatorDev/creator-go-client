@@ -1,6 +1,7 @@
 package deviceserver
 
 import "github.com/CreatorKit/go-deviceserver-client/hateoas"
+import "strconv"
 
 type EntryPoint struct {
 	Links hateoas.Links `json:"Links"`
@@ -79,4 +80,31 @@ type Clients struct {
 	PageInfo PageInfo      `json:"PageInfo"`
 	Items    []Client      `json:"Items"`
 	Links    hateoas.Links `json:"Links"`
+}
+
+type ObjectType struct {
+	ObjectTypeID string        `json:"ObjectTypeID"`
+	Links        hateoas.Links `json:"Links"`
+}
+
+type ObjectTypes struct {
+	PageInfo PageInfo     `json:"PageInfo"`
+	Items    []ObjectType `json:"Items"`
+}
+
+type ObjectInstance map[string]interface{}
+
+func (i ObjectInstance) InstanceID() int {
+	id, _ := strconv.Atoi(i["InstanceID"].(string))
+	return id
+}
+
+func (i ObjectInstance) Links() hateoas.Links {
+	return i["Links"].(hateoas.Links)
+}
+
+type ObjectInstances struct {
+	PageInfo PageInfo         `json:"PageInfo"`
+	Items    []ObjectInstance `json:"Items"`
+	Links    hateoas.Links    `json:"Links"`
 }
