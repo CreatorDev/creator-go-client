@@ -18,7 +18,7 @@ var (
 )
 
 // Client is the main object for interacting with the deviceserver
-type Client struct {
+type RESTClient struct {
 	hclient      *h.Client
 	token        OAuthToken
 	tokenExpires time.Time
@@ -27,13 +27,13 @@ type Client struct {
 // Create constructs a deviceserver client from a provided hateoas client.
 // If you want logging/caching etc, you should set those options during
 // hateoas client initialisation
-func Create(hclient *h.Client) (*Client, error) {
+func Create(hclient *h.Client) (*RESTClient, error) {
 	if hclient == nil ||
 		hclient.EntryURL == "" {
 		return nil, h.ErrorBadConfig
 	}
 
-	d := Client{
+	d := RESTClient{
 		hclient: hclient,
 	}
 
@@ -41,12 +41,12 @@ func Create(hclient *h.Client) (*Client, error) {
 }
 
 // Close will clean things up as required
-func (d *Client) Close() {
+func (d *RESTClient) Close() {
 
 }
 
 // SetBearerToken sets the Authorization header on the underlying hateoas client
-func (d *Client) SetBearerToken(token string) {
+func (d *RESTClient) SetBearerToken(token string) {
 	if token != "" {
 		d.hclient.DefaultHeaders["Authorization"] = "Bearer " + token
 	} else {
@@ -57,7 +57,7 @@ func (d *Client) SetBearerToken(token string) {
 // CreateAccessKey does what it says on the tin. The client
 // should already be authenticated somehow, by calling either
 // Authenticate/RefreshAuth/SetBearerToken
-func (d *Client) CreateAccessKey(name string) (*AccessKey, error) {
+func (d *RESTClient) CreateAccessKey(name string) (*AccessKey, error) {
 	var key AccessKey
 
 	// key names are not required, but make life much easier
@@ -75,12 +75,12 @@ func (d *Client) CreateAccessKey(name string) (*AccessKey, error) {
 }
 
 // DeleteAccessKey does what it says on the tin
-func (d *Client) DeleteAccessKey(key *AccessKey) error {
+func (d *RESTClient) DeleteAccessKey(key *AccessKey) error {
 	return d.DeleteSelf(&key.Links)
 }
 
 // GetAccessKeys returns the list of accesskeys in this organisation
-func (d *Client) GetAccessKeys(previous *AccessKeys) (*AccessKeys, error) {
+func (d *RESTClient) GetAccessKeys(previous *AccessKeys) (*AccessKeys, error) {
 	if previous == nil {
 		var keys AccessKeys
 		_, err := d.hclient.Get("",
@@ -106,7 +106,7 @@ func (d *Client) GetAccessKeys(previous *AccessKeys) (*AccessKeys, error) {
 }
 
 // Authenticate uses the provided key/secret to obtain an access_token/refresh_token
-func (d *Client) Authenticate(credentials *AccessKey) error {
+func (d *RESTClient) Authenticate(credentials *AccessKey) error {
 	var token OAuthToken
 	_, err := d.hclient.PostForm("",
 		h.Navigate{"authenticate"},
@@ -126,7 +126,7 @@ func (d *Client) Authenticate(credentials *AccessKey) error {
 }
 
 // RefreshAuth uses the provided refresh_token obtain an access_token/refresh_token
-func (d *Client) RefreshAuth(refreshToken string) error {
+func (d *RESTClient) RefreshAuth(refreshToken string) error {
 	var token OAuthToken
 	_, err := d.hclient.PostForm("",
 		h.Navigate{"authenticate"},
@@ -144,11 +144,67 @@ func (d *Client) RefreshAuth(refreshToken string) error {
 	return err
 }
 
+func (d *RESTClient) GetClients(previous *Clients) (*Clients, error) {
+	if previous == nil {
+		var clients Clients
+		_, err := d.hclient.Get("",
+			h.Navigate{"clients"},
+			nil,
+			nil,
+			&clients)
+
+		return &clients, err
+	}
+
+	next, err := previous.PageInfo.Links.Get("next")
+	if err == h.ErrorLinkNotFound {
+		return nil, nil
+	}
+
+	var clients Clients
+	_, err = d.hclient.Get(next.Href,
+		nil,
+		nil,
+		nil,
+		&clients)
+	return &clients, err
+}
+
+func (d *RESTClient) GetSubscriptions(endpoint string, previous *Subscriptions) (*Subscriptions, error) {
+	if endpoint != "" && previous != nil {
+		return nil, errors.New("cannot get subscriptions for endpoint and previous")
+	}
+
+	if previous == nil {
+		var subs Subscriptions
+		_, err := d.hclient.Get(endpoint,
+			h.Navigate{"subscriptions"},
+			nil,
+			nil,
+			&subs)
+
+		return &subs, err
+	}
+
+	next, err := previous.PageInfo.Links.Get("next")
+	if err == h.ErrorLinkNotFound {
+		return nil, nil
+	}
+
+	var subs Subscriptions
+	_, err = d.hclient.Get(next.Href,
+		nil,
+		nil,
+		nil,
+		&subs)
+	return &subs, err
+}
+
 // Subscribe sets up webhook subscriptions, i.e. COAP observations.
 // The `endpoint` can be
 // - "" (=entrypoint) to subscribe to ClientConnected/ClientDisconnected events
 // - a specific resource "self" URL to subscribe to observations on that resource
-func (d *Client) Subscribe(endpoint string, req *SubscriptionRequest, resp *SubscriptionResponse) error {
+func (d *RESTClient) Subscribe(endpoint string, req *SubscriptionRequest, resp *SubscriptionResponse) error {
 	buf, err := json.Marshal(req)
 	if err != nil {
 		return err
@@ -163,18 +219,18 @@ func (d *Client) Subscribe(endpoint string, req *SubscriptionRequest, resp *Subs
 	return err
 }
 
-func (d *Client) Unsubscribe(subscription *SubscriptionResponse) error {
+func (d *RESTClient) Unsubscribe(subscription *SubscriptionResponse) error {
 	return d.DeleteSelf(&subscription.Links)
 }
 
 // Delete performs DELETE on the specified resource
-func (d *Client) Delete(endpoint string) error {
+func (d *RESTClient) Delete(endpoint string) error {
 	_, err := d.hclient.Delete(endpoint, nil, nil, nil, nil)
 	return err
 }
 
 // DeleteSelf will find the "self" link and DELETE that
-func (d *Client) DeleteSelf(links *h.Links) error {
+func (d *RESTClient) DeleteSelf(links *h.Links) error {
 	self, err := links.Get("self")
 	if err != nil {
 		return nil
@@ -184,6 +240,6 @@ func (d *Client) DeleteSelf(links *h.Links) error {
 
 // HATEOAS exposes the underlying hateoas client so that you
 // can use that where necessary. Shouldn't be needed often.
-func (d *Client) HATEOAS() *h.Client {
+func (d *RESTClient) HATEOAS() *h.Client {
 	return d.hclient
 }

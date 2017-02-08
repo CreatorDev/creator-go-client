@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/CreatorKit/go-deviceserver-client/hateoas"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -80,7 +80,7 @@ func TestAuth(t *testing.T) {
 	_, err = entry.Links.Get("accesskeys")
 	assert.NotNil(t, err) // when not authenticated, should not be able to get accesskeys
 
-	err = d.Authenticate(k)
+	err = ds.Authenticate(k)
 	assert.Nil(t, err)
 
 	keys, err := d.GetAccessKeys(nil)

@@ -46,6 +46,12 @@ type SubscriptionResponse struct {
 	Links hateoas.Links `json:"Links"`
 }
 
+type Subscriptions struct {
+	PageInfo PageInfo              `json:"PageInfo"`
+	Items    []SubscriptionRequest `json:"Items"`
+	Links    hateoas.Links         `json:"Links"`
+}
+
 type OrgClaim struct {
 	OrgID int   `json:"OrgID"`
 	Exp   int64 `json:"exp"`
@@ -62,4 +68,15 @@ type Error struct {
 	ErrorCode    string `json:"ErrorCode"`
 	ErrorMessage string `json:"ErrorMessage"`
 	ErrorDetails string `json:"ErrorDetails"`
+}
+
+type Client struct {
+	Name  string
+	Links hateoas.Links `json:"Links"`
+}
+
+type Clients struct {
+	PageInfo PageInfo      `json:"PageInfo"`
+	Items    []Client      `json:"Items"`
+	Links    hateoas.Links `json:"Links"`
 }
