@@ -3,18 +3,19 @@ package hateoas
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 var (
-	ErrorLinkNotFound = errors.New("Link not found")
-	ErrorHttpStatus   = errors.New("HTTP status error")
-	ErrorBadConfig    = errors.New("bad config")
+	ErrorLinkNotFound = "Link not found"
+	ErrorHttpStatus   = "HTTP status error"
+	ErrorBadConfig    = "bad config"
 )
 
 // Link is the main HATEOAS link object
@@ -34,7 +35,7 @@ func (l Links) Get(rel string) (*Link, error) {
 			return &link, nil
 		}
 	}
-	return nil, ErrorLinkNotFound
+	return nil, errors.New(ErrorLinkNotFound)
 }
 
 // Self is a small wrapper around Get, mostly useful when you don't need to worry if the link isn't actually there
@@ -103,11 +104,11 @@ func (c *Client) Do(method string, url string, navigateLinks Navigate, headers H
 			return resp, err
 		}
 		if resp.StatusCode >= http.StatusBadRequest {
-			return resp, ErrorHttpStatus
+			return resp, errors.New(ErrorHttpStatus)
 		}
 		link, err := ep.Links.Get(nav)
 		if err != nil {
-			return resp, ErrorLinkNotFound
+			return resp, errors.New(ErrorLinkNotFound)
 		}
 		url = link.Href
 	}
@@ -140,7 +141,7 @@ func (c *Client) Do(method string, url string, navigateLinks Navigate, headers H
 	resp.Body.Close()
 
 	if resp.StatusCode >= http.StatusBadRequest {
-		return resp, ErrorHttpStatus
+		return resp, errors.New(ErrorHttpStatus)
 	}
 
 	if result != nil {

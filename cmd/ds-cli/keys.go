@@ -1,13 +1,13 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 
-	"github.com/urfave/cli"
 	ds "github.com/CreatorKit/go-deviceserver-client"
 	"github.com/CreatorKit/go-deviceserver-client/hateoas"
+	"github.com/pkg/errors"
+	"github.com/urfave/cli"
 )
 
 const keysCategory = "Key management"

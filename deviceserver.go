@@ -4,17 +4,17 @@ package deviceserver
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
 
 	h "github.com/CreatorKit/go-deviceserver-client/hateoas"
+	"github.com/pkg/errors"
 )
 
 var (
 	// ErrorInvalidKeyName can be sent in response to CreateAccessKey
-	ErrorInvalidKeyName = errors.New("Invalid key name")
+	ErrorInvalidKeyName = "Invalid key name"
 )
 
 // Client is the main object for interacting with the deviceserver
@@ -30,7 +30,7 @@ type RESTClient struct {
 func Create(hclient *h.Client) (*RESTClient, error) {
 	if hclient == nil ||
 		hclient.EntryURL == "" {
-		return nil, h.ErrorBadConfig
+		return nil, errors.New(h.ErrorBadConfig)
 	}
 
 	d := RESTClient{
@@ -62,7 +62,7 @@ func (d *RESTClient) CreateAccessKey(name string) (*AccessKey, error) {
 
 	// key names are not required, but make life much easier
 	if name == "" {
-		return nil, ErrorInvalidKeyName
+		return nil, errors.New(ErrorInvalidKeyName)
 	}
 
 	_, err := d.hclient.Post("",
@@ -92,7 +92,7 @@ func (d *RESTClient) GetAccessKeys(previous *AccessKeys) (*AccessKeys, error) {
 	}
 
 	next, err := previous.PageInfo.Links.Get("next")
-	if err == h.ErrorLinkNotFound {
+	if errors.Cause(err).Error() == h.ErrorLinkNotFound {
 		return nil, nil
 	}
 
@@ -157,7 +157,7 @@ func (d *RESTClient) GetClients(previous *Clients) (*Clients, error) {
 	}
 
 	next, err := previous.PageInfo.Links.Get("next")
-	if err == h.ErrorLinkNotFound {
+	if errors.Cause(err).Error() == h.ErrorLinkNotFound {
 		return nil, nil
 	}
 
@@ -207,7 +207,7 @@ func (d *RESTClient) GetSubscriptions(endpoint string, previous *Subscriptions) 
 	}
 
 	next, err := previous.PageInfo.Links.Get("next")
-	if err == h.ErrorLinkNotFound {
+	if errors.Cause(err).Error() == h.ErrorLinkNotFound {
 		return nil, nil
 	}
 
