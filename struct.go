@@ -1,7 +1,10 @@
 package deviceserver
 
-import "github.com/CreatorKit/go-deviceserver-client/hateoas"
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/CreatorKit/go-deviceserver-client/hateoas"
+)
 
 type EntryPoint struct {
 	Links hateoas.Links `json:"Links"`
@@ -27,19 +30,22 @@ type AccessKeys struct {
 	Links    hateoas.Links `json:"Links"`
 }
 
+type SubscriptionAttributes struct {
+	Pmin        string `json:"Pmin,omitempty"`
+	Pmax        string `json:"Pmax,omitempty"`
+	Step        string `json:"Step,omitempty"`
+	LessThan    string `json:"LessThan,omitempty"`
+	GreaterThan string `json:"GreaterThan,omitempty"`
+}
+
 type SubscriptionRequest struct {
 	SubscriptionType string `json:"SubscriptionType"`
 	URL              string `json:"Url"`
 
-	AcceptContentType string `json:"AcceptContentType,omitempty"`
-	Property          string `json:"Property,omitempty"`
-	Attributes        *struct {
-		Pmin        string `json:"Pmin,omitempty"`
-		Pmax        string `json:"Pmax,omitempty"`
-		Step        string `json:"Step,omitempty"`
-		LessThan    string `json:"LessThan,omitempty"`
-		GreaterThan string `json:"GreaterThan,omitempty"`
-	} `json:"Attributes,omitempty"`
+	AcceptContentType string                  `json:"AcceptContentType,omitempty"`
+	Property          string                  `json:"Property,omitempty"`
+	Attributes        *SubscriptionAttributes `json:"Attributes,omitempty"`
+	Links             hateoas.Links           `json:"Links"`
 }
 
 type SubscriptionResponse struct {
@@ -99,12 +105,32 @@ func (i ObjectInstance) InstanceID() int {
 	return id
 }
 
-func (i ObjectInstance) Links() hateoas.Links {
-	return i["Links"].(hateoas.Links)
+func (i ObjectInstance) Links() *hateoas.Links {
+	result := hateoas.Links{}
+	links := i["Links"].([]interface{})
+	for _, l := range links {
+		ll := hateoas.Link{}
+		lmap := l.(map[string]interface{})
+		href := lmap["href"]
+		rel := lmap["rel"]
+		_type := lmap["type"]
+		if href != nil {
+			ll.Href = href.(string)
+		}
+		if rel != nil {
+			ll.Rel = rel.(string)
+		}
+		if _type != nil {
+			ll.Type = _type.(string)
+		}
+		result = append(result, ll)
+	}
+	return &result
 }
 
 type ObjectInstances struct {
-	PageInfo PageInfo         `json:"PageInfo"`
-	Items    []ObjectInstance `json:"Items"`
-	Links    hateoas.Links    `json:"Links"`
+	// see https://github.com/CreatorDev/DeviceServer/issues/25
+	// PageInfo PageInfo         `json:"PageInfo"`
+	Items []ObjectInstance `json:"Items"`
+	Links hateoas.Links    `json:"Links"`
 }
