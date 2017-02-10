@@ -134,3 +134,14 @@ type ObjectInstances struct {
 	Items []ObjectInstance `json:"Items"`
 	Links hateoas.Links    `json:"Links"`
 }
+
+type WebhookItem struct {
+	SubscriptionType string                 `json:"SubscriptionType"`
+	TimeTriggered    string                 `json:"TimeTriggered"`
+	Value            map[string]interface{} `json:"Value"`
+	Links            hateoas.Links          `json:"Links"`
+}
+
+type Webhook struct {
+	Items []WebhookItem `json:"Items"`
+}
