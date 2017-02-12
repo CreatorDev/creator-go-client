@@ -3,6 +3,7 @@ package hateoas
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -46,6 +47,15 @@ func (l Links) Self() string {
 		return `(unable to find "self" link)`
 	}
 	return link.Href
+}
+
+func (l Links) String() string {
+	s := "["
+	for i, _ := range l {
+		s += fmt.Sprintf("\n  %+v", l[i])
+	}
+	s += "]"
+	return s
 }
 
 // Navigate specifies a list of links to be traversed

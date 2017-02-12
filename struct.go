@@ -1,6 +1,8 @@
 package deviceserver
 
 import (
+	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/CreatorKit/go-deviceserver-client/hateoas"
@@ -133,6 +135,98 @@ type ObjectInstances struct {
 	// PageInfo PageInfo         `json:"PageInfo"`
 	Items []ObjectInstance `json:"Items"`
 	Links hateoas.Links    `json:"Links"`
+}
+
+type ObjectDefinitionProperty struct {
+	PropertyDefinitionID string `json:"PropertyDefinitionID"`
+	PropertyID           string `json:"PropertyID"`
+	Name                 string `json:"Name"`
+	Description          string `json:"Description"`
+	DataType             string `json:"DataType"`
+	Units                string `json:"Units"`
+	IsCollection         bool   `json:"IsCollection"`
+	IsMandatory          bool   `json:"IsMandatory"`
+	Access               string `json:"Access"`
+	SerialisationName    string `json:"SerialisationName"`
+}
+
+type ObjectDefinitionProperties []ObjectDefinitionProperty
+
+func (p ObjectDefinitionProperties) Get(nameOrID string) *ObjectDefinitionProperty {
+	for _, pp := range p {
+		if pp.PropertyID == nameOrID || pp.SerialisationName == nameOrID {
+			return &pp
+		}
+	}
+	return nil
+}
+func (p ObjectDefinitionProperties) String() string {
+	s := "[\n"
+	for _, pp := range p {
+		s += fmt.Sprintf("%+v\n", pp)
+	}
+	s += "]\n"
+	return s
+}
+
+type ObjectDefinition struct {
+	ObjectDefinitionID string                     `json:"ObjectDefinitionID"`
+	ObjectID           string                     `json:"ObjectID"`
+	Name               string                     `json:"Name"`
+	MIMEType           string                     `json:"MIMEType"`
+	Description        string                     `json:"Description"`
+	SerialisationName  string                     `json:"SerialisationName"`
+	Singleton          bool                       `json:"Singleton"`
+	Properties         ObjectDefinitionProperties `json:"Properties"`
+	Links              hateoas.Links              `json:"Links"`
+}
+
+type ObjectDefinitionRegistry struct {
+	href map[string]*ObjectDefinition
+	id   map[int]*ObjectDefinition
+}
+
+func CreateObjectDefinitionRegistry() *ObjectDefinitionRegistry {
+	r := ObjectDefinitionRegistry{}
+	r.href = make(map[string]*ObjectDefinition)
+	r.id = make(map[int]*ObjectDefinition)
+	return &r
+}
+
+func (r *ObjectDefinitionRegistry) Set(href string, def *ObjectDefinition) {
+	u, err := url.Parse(href)
+	if err != nil {
+		return
+	}
+	if def != nil {
+		id, err := strconv.Atoi(def.ObjectID)
+		if err != nil {
+			return
+		}
+
+		r.href[u.Path] = def
+		r.id[id] = def
+	}
+}
+
+func (r *ObjectDefinitionRegistry) GetByHref(href string) *ObjectDefinition {
+	u, err := url.Parse(href)
+	if err != nil {
+		return nil
+	}
+	def, exists := r.href[u.Path]
+	if !exists {
+		return nil
+	}
+	return def
+}
+
+func (r *ObjectDefinitionRegistry) GetByID(id int) *ObjectDefinition {
+	def, exists := r.id[id]
+	if !exists {
+		return nil
+	}
+	return def
 }
 
 type WebhookItem struct {
